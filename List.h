@@ -34,14 +34,133 @@ class List
                 return;
             }
             
-            Node<T>* nextElement = head;
+            Node<T>* currentElement = head;
 
-            while(nextElement->next != NULL)
+            while(currentElement->next != NULL)
             {
-                nextElement = nextElement->next;
+                currentElement = currentElement->next;
             }
 
-            nextElement->next = newElement;
+            currentElement->next = newElement;
+        }
+
+        bool contains(T value) 
+        {
+            assert(head);
+
+            Node<T>* currentElement = head;
+
+            while(currentElement)
+            {
+                if (currentElement->value == value)
+                {
+                    return true;
+                }
+
+                currentElement = currentElement->next;
+            }
+
+            return false;
+        }
+
+        void operator+=(List<T> list)
+        {
+            if (head == NULL)
+            {
+                head = list.head;
+
+                return;
+            }
+            
+            Node<T>* currentElement = head;
+
+            while(currentElement->next != NULL)
+            {
+                currentElement = currentElement->next;
+            }
+
+            currentElement->next = list.head;
+        }
+
+        void pushFront (T value)
+        {
+            Node<T>* newElement = new Node<T>;
+
+            newElement->next = NULL;
+            newElement->value = value;
+
+            if (head == NULL)
+            {
+                head = newElement;
+
+                return;
+            }
+
+            newElement->next = head;
+            head = newElement;
+        }
+
+        void removeByValue(T value)
+        {
+            assert(head);
+
+            if (not contains(value))
+            {
+                return;
+            }
+
+            if (head->value == value)
+            {
+                popFront();
+
+                return;
+            }
+
+            Node<T>* currentElement = head;
+
+            while(currentElement->next->value != value)
+            {
+                currentElement = currentElement->next;
+            }
+
+            Node<T>* newNext = currentElement->next->next;
+            
+            delete currentElement->next;
+
+            currentElement->next = newNext;
+        }
+
+        void removeByIndex(int index)
+        {
+            assert(head);
+
+            if (index >= length())
+            {
+                return;
+            }
+
+            if (index == 0)
+            {
+                popFront();
+
+                return;
+            }
+
+            Node<T>* currentElement = head;
+            int currentNum = 1;
+
+            while(currentElement && currentNum != index)
+            {
+                currentNum++;
+
+                currentElement = currentElement->next;
+            }
+
+            Node<T>* newNext = currentElement->next->next;
+        
+            delete currentElement->next;
+
+            currentElement->next = newNext;
         }
 
         T popFront()
@@ -58,19 +177,19 @@ class List
             return value;
         }
 
-        T findByIndex(int i)
+        T operator[](int index)
         {
             Node<T>* currentElement = head;
             int currentNum = 0;
 
-            while(currentElement && currentNum != i)
+            while(currentElement && currentNum != index)
             {
                 currentNum++;
 
                 currentElement = currentElement->next;
             }
 
-            if (i == currentNum)
+            if (index == currentNum)
             {
                 T returnedValue = currentElement->value;
                 return returnedValue;
@@ -96,18 +215,4 @@ class List
         }
 };
 
-/*int main()
-{
-    List<int> testList;
-
-    testList.append(3);
-    testList.append(4); 
-    testList.append(5);
-
-    std::cout << *(testList.findByIndex(1)) << std::endl;
-    //std::cout << testList.head->value << std::endl;
-    //std::cout << testList.popFront() << std::endl;
-    
-    return 0;
-}*/
 #endif

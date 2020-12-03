@@ -2,6 +2,10 @@
 #include <SFML/Window.hpp>
 #include <SFML/System.hpp>
 #include <iostream>
+#include <cstdlib>
+#include <ctime>
+#include <string>
+#include <sstream>
 #include "Vector2f.h"
 #include "List.h"
 
@@ -166,35 +170,47 @@ class Projectile : public GameObject
             speedY = speedY + accelerationY * dT;
         }
 };
- 
-class GraphicsManager
-{
-    public:
-
-        void updateGraphics(List<GameObject*> storage, sf::RenderWindow* window)
-        {
-            window->clear();
-
-            for (int i = 0; i < storage.length(); i++)
-            {
-                storage.findByIndex(i)->draw(window);
-            }
-
-            window->display();
-        }
-};
 
 class LogicManager
 {
-    public:
+    private:
 
+        float score = 0;
+        int highestPlatform = 25;
         int checkedPlat = 0;
+        int scorePlat = -1;
+
+    public:
 
         void moveAll(List<GameObject*> storage, float dT)
         {
             for (int i = 0; i < storage.length(); i++)
             {
-                storage.findByIndex(i)->move(dT);
+                storage[i]->move(dT);
+
+                if (storage[i]->type == ObjectType::OPlatform && storage[i]->r.y >= 800)
+                {
+                    storage[i]->r.x = storage[highestPlatform]->r.x - 150  + rand() % 300;
+
+                    if (storage[i]->r.x >= 1000)
+                    {
+                        storage[i]->r.x -= 200;
+                    }
+
+                    else if (storage[i]->r.x <= 0)
+                    {
+                        storage[i]->r.x += 200;
+                    }
+
+                    storage[i]->r.y = storage[highestPlatform]->r.y - 200  + rand() % 100;
+
+                    if (highestPlatform == 25)
+                    {
+                        highestPlatform = 0;
+                    }
+
+                    highestPlatform += 1;
+                }
             }
         }
 
@@ -202,19 +218,19 @@ class LogicManager
         {
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
             {
-                storage.findByIndex(0)->speedX = -2;
-                storage.findByIndex(0)->orientaion = -2;
+                storage[0]->speedX = -2;
+                storage[0]->orientaion = -2;
             }
 
             else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))
             {
-                storage.findByIndex(0)->speedX = 2;
-                storage.findByIndex(0)->orientaion = 1;
+                storage[0]->speedX = 2;
+                storage[0]->orientaion = 1;
             }
 
             else
             {
-                storage.findByIndex(0)->speedX = 0;
+                storage[0]->speedX = 0;
             }
         }
 
@@ -222,25 +238,25 @@ class LogicManager
         {
             for (int i = 1; i < storage.length(); i++)
             {
-                GameObject* itter = storage.findByIndex(i);
+                GameObject* itter = storage[i];
                 if (itter->type == ObjectType::OPlatform)
                 {
-                    if (itter->r.y <= storage.findByIndex(0)->r.y && \
-                    storage.findByIndex(0)->r.y <= itter->r.y + 5 && \
-                    itter->r.x - 69 <= storage.findByIndex(0)->r.x && \
-                    storage.findByIndex(0)->r.x <= itter->r.x + 69)
+                    if (itter->r.y <= storage[0]->r.y && \
+                    storage[0]->r.y <= itter->r.y + 5 && \
+                    itter->r.x - 69 <= storage[0]->r.x && \
+                    storage[0]->r.x <= itter->r.x + 69 && storage[0]->speedY > 0)
                     {
-                        storage.findByIndex(0)->speedY = -10;
+                        storage[0]->speedY = -10;
 
                         if (itter->r.y <= 450)
                         {
                             for (int j = 1; j < storage.length(); j++)
                             {
-                                storage.findByIndex(j)->speedY = 10;
+                                storage[j]->speedY = 10;
                             }
 
-                            storage.findByIndex(0)->keptSpeedY = storage.findByIndex(0)->speedY;
-                            storage.findByIndex(0)->speedY = 0;
+                            storage[0]->keptSpeedY = storage[0]->speedY;
+                            storage[0]->speedY = 0;
                         }
 
                         checkedPlat = i;
@@ -253,11 +269,11 @@ class LogicManager
         {
             if (checkedPlat > 0 && checkedPlat < storage.length())
             {
-                if (storage.findByIndex(checkedPlat)->r.y >= 700)
+                if (storage[checkedPlat]->r.y >= 700)
                 {
                     for (int j = 1; j < storage.length(); j++)
                     {
-                        storage.findByIndex(j)->speedY = 0;
+                        storage[j]->speedY = 0;
                     }
                 }
             }
@@ -265,12 +281,70 @@ class LogicManager
 
         bool checkLoseConditions(List<GameObject*> storage)
         {
-            if (storage.findByIndex(0)->r.y >= 800)
+            if (storage[0]->r.y >= 800)
             {
                 return true;
             }
 
             return false;
+        }
+
+        void updateScore(List<GameObject*> storage, float dT)
+        {
+            if ((scorePlat != checkedPlat && storage[0]->speedY <= 0) || storage[1]->speedY != 0)
+            {
+                score += 0.07;
+            }
+
+            else 
+            {
+                scorePlat = checkedPlat;
+            }
+        }
+
+        sf::String getScore()
+        {
+            std::ostringstream textScore;
+            textScore << int(score);
+
+            return textScore.str();
+        }
+};
+
+class GraphicsManager
+{
+    private:
+
+        sf::Font font;
+
+    public:
+
+        void changeFont(std::string fontName)
+        {
+            font.loadFromFile(fontName);
+        }
+
+
+        void updateGraphics(LogicManager logics, List<GameObject*> storage, float dT, sf::RenderWindow* window)
+        {
+            window->clear();
+
+            for (int i = 0; i < storage.length(); i++)
+            {
+                storage[i]->draw(window);
+            }
+
+            printScore(logics.getScore(), storage, dT, window);
+
+            window->display();
+        }
+
+        void printScore(sf::String textScore, List<GameObject*> storage, float dT, sf::RenderWindow* window)
+        {
+            sf::Text score(textScore, font, 75);
+            score.setPosition(100, 100);
+            score.setFillColor(sf::Color::Red);
+            window->draw(score);
         }
 };
  
@@ -280,76 +354,48 @@ int main()
     GraphicsManager graphics;
     LogicManager logics;
 
+    graphics.changeFont("TimesNewRoman.ttf");
+
     Character doodle;
     doodle.r.x = 500;
     doodle.r.y = 760;
     doodle.accelerationY = 0.25;
-
-    Enemy monster1;
-    monster1.r.x = 200;
-    monster1.r.y = 200;
-
-    Platform plat1;
-    plat1.r.x = 500;
-    plat1.r.y = 760;
-    
-    Platform plat2;
-    plat2.r.x = 500;
-    plat2.r.y = 560;
-
-    Platform plat3;
-    plat3.r.x = 500;
-    plat3.r.y = 360;
-
-    Platform plat4;
-    plat4.r.x = 500;
-    plat4.r.y = 160;
-
-    Platform plat5;
-    plat5.r.x = 500;
-    plat5.r.y = -40;
-    
-    Platform plat6;
-    plat6.r.x = 500;
-    plat6.r.y = -240;
-
-    Platform plat7;
-    plat7.r.x = 500;
-    plat7.r.y = -440;
-
-    Platform plat8;
-    plat8.r.x = 500;
-    plat8.r.y = -640;
-
-    Projectile proj1;
-    proj1.r.x = 0;
-    proj1.r.y = 0;
-
+   
     storage.append(&doodle);
-    storage.findByIndex(0)->type = ObjectType::OCharacter;
 
-    storage.append(&monster1);
-    storage.findByIndex(1)->type = ObjectType::OEnemy;
+    storage[0]->type = ObjectType::OCharacter;
 
-    storage.append(&plat1);
-    storage.findByIndex(2)->type = ObjectType::OPlatform;
-    storage.append(&plat2);
-    storage.findByIndex(3)->type = ObjectType::OPlatform;
-    storage.append(&plat3);
-    storage.findByIndex(4)->type = ObjectType::OPlatform;
-    storage.append(&plat4);
-    storage.findByIndex(5)->type = ObjectType::OPlatform;
-    storage.append(&plat5);
-    storage.findByIndex(6)->type = ObjectType::OPlatform;
-    storage.append(&plat6);
-    storage.findByIndex(7)->type = ObjectType::OPlatform;
-    storage.append(&plat7);
-    storage.findByIndex(8)->type = ObjectType::OPlatform;
-    storage.append(&plat8);
-    storage.findByIndex(9)->type = ObjectType::OPlatform;
+    Platform platforms[25];
 
-    storage.append(&proj1);
-    storage.findByIndex(10)->type = ObjectType::OProjectile;
+    platforms[0].r.x = 500;
+    platforms[0].r.y = 760;
+
+    storage.append(&platforms[0]);
+
+    storage[1]->type = ObjectType::OPlatform;
+
+    srand(time(0));
+
+    for(int i = 1; i < 25; i++)
+    {   
+        platforms[i].r.x = platforms[i - 1].r.x - 150  + rand() % 300;
+
+        if (storage[i]->r.x >= 1000)
+            {
+                storage[i]->r.x -= 200;
+            }
+
+        else if (storage[i]->r.x <= 0)
+            {
+                storage[i]->r.x += 200;
+            }
+
+        platforms[i].r.y = platforms[i - 1].r.y - 200  + rand() % 100;
+
+        storage.append(&platforms[i]);
+
+        storage[i + 1]->type = ObjectType::OPlatform;
+    }
 
     float dT = 0.1;
     int checkedPlat;
@@ -358,7 +404,7 @@ int main()
 
     sf::RenderWindow window(sf::VideoMode(1000, 800), "SFML window");
 
-    graphics.updateGraphics(storage, &window);
+    graphics.updateGraphics(logics, storage, dT, &window);
 
     while (window.isOpen())
     {
@@ -390,7 +436,9 @@ int main()
 
         logics.moveAll(storage, dT);
 
-        graphics.updateGraphics(storage, &window);
+        logics.updateScore(storage, dT);
+
+        graphics.updateGraphics(logics, storage, dT, &window);
 
         if (logics.checkLoseConditions(storage))
         {
