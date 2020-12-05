@@ -325,7 +325,7 @@ class GraphicsManager
         }
 
 
-        void updateGraphics(LogicManager logics, List<GameObject*> storage, float dT, sf::RenderWindow* window)
+        void updateGraphics(sf::String textScore, List<GameObject*> storage, float dT, sf::RenderWindow* window)
         {
             window->clear();
 
@@ -334,7 +334,7 @@ class GraphicsManager
                 storage[i]->draw(window);
             }
 
-            printScore(logics.getScore(), storage, dT, window);
+            printScore(textScore, storage, dT, window);
 
             window->display();
         }
@@ -404,7 +404,7 @@ int main()
 
     sf::RenderWindow window(sf::VideoMode(1000, 800), "SFML window");
 
-    graphics.updateGraphics(logics, storage, dT, &window);
+    graphics.updateGraphics(logics.getScore(), storage, dT, &window);
 
     while (window.isOpen())
     {
@@ -438,7 +438,7 @@ int main()
 
         logics.updateScore(storage, dT);
 
-        graphics.updateGraphics(logics, storage, dT, &window);
+        graphics.updateGraphics(logics.getScore(), storage, dT, &window);
 
         if (logics.checkLoseConditions(storage))
         {
